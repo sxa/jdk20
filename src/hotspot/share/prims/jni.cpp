@@ -3986,13 +3986,6 @@ jint JNICALL jni_GetEnv(JavaVM *vm, void **penv, jint version) {
     return ret;
   }
 
-  // No JVM TI with --enable-preview and no continuations support.
-  if (!VMContinuations && Arguments::enable_preview() && JvmtiExport::is_jvmti_version(version)) {
-    *penv = NULL;
-    ret = JNI_EVERSION;
-    return ret;
-  }
-
   if (JniExportedInterface::GetExportedInterface(vm, penv, version, &ret)) {
     return ret;
   }

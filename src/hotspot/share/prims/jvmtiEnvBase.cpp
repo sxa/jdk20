@@ -1583,7 +1583,9 @@ JvmtiEnvBase::suspend_thread(oop thread_oop, JavaThread* java_thread, bool singl
   // suspension of mounted virtual thread. So, we just mark it as suspended
   // and it will be actually suspended at virtual thread unmount transition.
   if (!is_passive_cthread) {
-    assert(single_suspend || is_virtual, "SuspendAllVirtualThreads should never suspend non-virtual threads");
+    assert(thread_h() != nullptr, "sanity check");
+    assert(single_suspend || thread_h()->is_a(vmClasses::BaseVirtualThread_klass()),
+           "SuspendAllVirtualThreads should never suspend non-virtual threads");
     // Case of mounted virtual or attached carrier thread.
     if (!JvmtiSuspendControl::suspend(java_thread)) {
       // Thread is already suspended or in process of exiting.
@@ -1643,7 +1645,9 @@ JvmtiEnvBase::resume_thread(oop thread_oop, JavaThread* java_thread, bool single
   assert(!java_thread->is_in_VTMS_transition(), "sanity check");
 
   if (!is_passive_cthread) {
-    assert(single_resume || is_virtual, "ResumeAllVirtualThreads should never resume non-virtual threads");
+    assert(thread_h() != nullptr, "sanity check");
+    assert(single_resume || thread_h()->is_a(vmClasses::BaseVirtualThread_klass()),
+           "ResumeAllVirtualThreads should never resume non-virtual threads");
     if (java_thread->is_suspended()) {
       if (!JvmtiSuspendControl::resume(java_thread)) {
         return JVMTI_ERROR_THREAD_NOT_SUSPENDED;
@@ -1832,7 +1836,8 @@ VM_GetAllStackTraces::doit() {
     if (thread_oop != NULL &&
         !jt->is_exiting() &&
         java_lang_Thread::is_alive(thread_oop) &&
-        !jt->is_hidden_from_external_view()) {
+        !jt->is_hidden_from_external_view() &&
+        !thread_oop->is_a(vmClasses::BoundVirtualThread_klass())) {
       ++_final_thread_count;
       // Handle block of the calling thread is used to create local refs.
       _collector.fill_frames((jthread)JNIHandles::make_local(_calling_thread, thread_oop),
